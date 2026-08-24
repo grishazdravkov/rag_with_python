@@ -1,5 +1,6 @@
 import argparse
 import json
+from lib.keyword_search import search_command
 
 
 def main() -> None:
@@ -13,7 +14,10 @@ def main() -> None:
 
     match args.command:
         case "search":
+            search_command_result = search_command(args.query)
             print(f"Searching for: {args.query}")
+            for index, item in enumerate(search_command_result):
+                print(f"{index+1}. {item['title']}")
         case _:
             parser.print_help()
 
