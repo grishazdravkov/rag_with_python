@@ -37,29 +37,44 @@ class InvertedIndex:
         with open('cache/docmap.pkl', 'wb') as f:
             pickle.dump(self.docmap, f)
 
+    def load(self):
+        with open('cache/index.pkl', 'rb') as f:
+            self.index = pickle.load(f)
+
+        with open('cache/docmap.pkl', 'rb') as f:
+            self.docmap = pickle.load(f)
+
 
 def build_command():
     inv_index = InvertedIndex()
     inv_index.build()
     inv_index.save()
-    docs = inv_index.get_documents("merida")
+    docs = inv_index.get_documents("")
     print(f"First document for token 'merida' = {docs[0]}")
 
 
 def search_command(query):
-    movie_list = load_movies()
-    empty_movies_list = []
+    try:
+        inv_index = InvertedIndex()
+        inv_index.load()
+    except FileNotFoundError as e:
+        print(f"Error while loading inverted index: {e}")
+        exit(1)
 
+    results = []
     kept_tokens = tokenize_text(query)
+    seen_ids = set()
 
-    for movie in movie_list:
-        # init empty list for kept titles
-        kept_titles = tokenize_text(movie['title'])
-        for q in kept_tokens:
-            if any(q in title_word for title_word in kept_titles):
-                empty_movies_list.append(movie)
-                break
-    return empty_movies_list[:5]
+    for token in kept_tokens:
+        document_id = inv_index.get_documents(token)
+        for doc in document_id:
+            if doc not in seen_ids:
+                seen_ids.add(doc)
+                results.append(inv_index.docmap[doc])
+                if len(results) == 5:
+                    return results
+    return results
+
 
 
 def tokenize_text(text: str) -> list[str]:
